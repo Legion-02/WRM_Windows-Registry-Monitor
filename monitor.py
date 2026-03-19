@@ -1,44 +1,31 @@
-import time
-import json
-import winreg
+import time, json, winreg, config
 from detector import detect_changes
+from analyzer import analyze_change
 from logger import log_change
-import config
 
-def get_values(hive, path):
-    values = {}
+def get_vals(h,p):
+    vals={}
     try:
-        key = winreg.OpenKey(hive, path)
-        i = 0
+        k=winreg.OpenKey(h,p); i=0
         while True:
-            name, value, _ = winreg.EnumValue(key, i)
-            values[name] = value
-            i += 1
-    except OSError:
-        pass
-    return values
+            n,v,_=winreg.EnumValue(k,i); vals[n]=v; i+=1
+    except: pass
+    return vals
 
 def monitor():
-    with open("baseline.json", "r") as f:
-        baseline = json.load(f)
-
+    baseline={}
     while True:
-        for hive_name, hive in config.HIVES.items():
-            hive_obj = getattr(winreg, hive)
-
-            for path in config.MONITORED_KEYS:
-                full_path = f"{hive_name}\\{path}"
-
-                current = get_values(hive_obj, path)
-                old = baseline.get(full_path, {})
-
-                changes = detect_changes(old, current)
-
-                for change in changes:
-                    action, key, old_val, new_val = change
-                    print(f"[ALERT] {action} in {full_path} -> {key}")
-                    log_change(action, full_path, key, old_val, new_val)
-
-                baseline[full_path] = current
-
+        for hn,h in config.HIVES.items():
+            ho=getattr(winreg,h)
+            for p in config.MONITORED_KEYS:
+                fp=f"{hn}\\{p}"
+                cur=get_vals(ho,p)
+                old=baseline.get(fp,{})
+                changes=detect_changes(old,cur)
+                for c in changes:
+                    a,k,o,n=c
+                    s,r=analyze_change(fp,k,n)
+                    print(f"[{s}] {a} {fp} {k}")
+                    log_change(a,fp,k,o,n,s,r)
+                baseline[fp]=cur
         time.sleep(config.POLL_INTERVAL)
