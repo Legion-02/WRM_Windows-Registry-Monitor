@@ -8,26 +8,32 @@ from analyzer import analyze_change
 from logger import log_change
 
 
-def get_vals(h, p):
-    vals = {}
+# 🔹 Get registry values
+def get_values(hive, path):
+    values = {}
     try:
-        key = winreg.OpenKey(h, p)
+        key = winreg.OpenKey(hive, path)
         i = 0
         while True:
             name, value, _ = winreg.EnumValue(key, i)
-            vals[name] = value
+            values[name] = value
             i += 1
-    except:
+    except OSError:
         pass
-    return vals
+    return values
 
 
 def monitor():
-    # ✅ Load baseline properly
-    with open("baseline.json", "r") as f:
-        baseline = json.load(f)
+    # ✅ Load baseline
+    try:
+        with open("baseline.json", "r") as f:
+            baseline = json.load(f)
+        print("✅ Baseline loaded successfully")
+    except:
+        print("❌ Failed to load baseline. Run baseline creation first.")
+        return
 
-    print("✅ Baseline loaded successfully")
+    print("🔍 Monitoring started...\n")
 
     while True:
         for hive_name, hive in config.HIVES.items():
@@ -36,17 +42,25 @@ def monitor():
             for path in config.MONITORED_KEYS:
                 full_path = f"{hive_name}\\{path}"
 
-                current = get_vals(hive_obj, path)
-                old = baseline.get(full_path, {})
+                # 🔹 Get current values
+                current_values = get_values(hive_obj, path)
 
-                changes = detect_changes(old, current)
+                # 🔹 Get old values from baseline
+                old_values = baseline.get(full_path, {})
 
+                # 🔹 Detect changes
+                changes = detect_changes(old_values, current_values)
+
+                # 🔹 Process changes
                 for change in changes:
                     action, key, old_val, new_val = change
 
-                    severity, reason = analyze_change(full_path, key, new_val)
+                    severity, reason = analyze_change(
+                        full_path, key, new_val
+                    )
 
-                    print(f"[{severity}] {action} {full_path} → {key} ({reason})")
+                    print(f"[{severity}] {action} → {full_path} → {key}")
+                    print(f"Reason: {reason}\n")
 
                     log_change(
                         action,
@@ -58,8 +72,11 @@ def monitor():
                         reason
                     )
 
-                # ✅ update baseline in memory
-                baseline[full_path] = current
+                # ✅ Update baseline in memory
+                baseline[full_path] = current_values
 
-        # ✅ wait before next scan
+        # 🔁 Debug indicator (VERY IMPORTANT)
+        print("⏳ Monitoring cycle complete...\n")
+
+        # ⏱ Wait before next scan
         time.sleep(config.POLL_INTERVAL)
