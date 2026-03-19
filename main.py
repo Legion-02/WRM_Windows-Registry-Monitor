@@ -1,10 +1,9 @@
-import config
-from baseline import create_baseline
 from monitor import monitor
-import os
+from baseline import create_baseline
+import os, config
 
 if not os.path.exists("baseline.json"):
     create_baseline(config)
 
-print("Starting Registry Monitor...")
+print("Starting Advanced Registry Monitor...")
 monitor()
