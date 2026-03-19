@@ -1,22 +1,29 @@
-from datetime import datetime
 import os
+import config
 
-def log_change(action, path, key, old, new, severity, reason):
-    log_file = "logs.txt"
+from baseline import create_baseline
+from monitor import monitor
+
+
+def main():
+    print("🔐 Windows Registry Monitoring System\n")
+
+    # ✅ Check if baseline exists
+    if not os.path.exists("baseline.json"):
+        print("⚠️ Baseline not found. Creating new baseline...\n")
+        create_baseline(config)
+    else:
+        print("✅ Baseline already exists.\n")
+
+    print("🚀 Starting Advanced Registry Monitor...\n")
 
     try:
-        with open(log_file, "a") as f:
-            f.write(f"\n[{datetime.now()}]\n")
-            f.write(f"Action: {action}\n")
-            f.write(f"Path: {path}\n")
-            f.write(f"Key: {key}\n")
-            f.write(f"Old Value: {old}\n")
-            f.write(f"New Value: {new}\n")
-            f.write(f"Severity: {severity}\n")
-            f.write(f"Reason: {reason}\n")
-            f.write("-" * 40 + "\n")
-
-        print("📝 Logged successfully")
-
+        monitor()
+    except KeyboardInterrupt:
+        print("\n🛑 Monitoring stopped by user.")
     except Exception as e:
-        print("❌ Logging failed:", e)
+        print(f"❌ Error occurred: {e}")
+
+
+if __name__ == "__main__":
+    main()
