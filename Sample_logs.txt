@@ -1,0 +1,30 @@
+
+[2026-03-22 13:31:28.966015]
+Action: ADDED
+Path: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+Key: New Value #1
+Old Value: None
+New Value: 
+Severity: HIGH
+Reason: Persistence detected
+----------------------------------------
+
+[2026-03-22 13:31:43.971396]
+Action: MODIFIED
+Path: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+Key: New Value #1
+Old Value: 
+New Value: c:\malware.exe
+Severity: HIGH
+Reason: Persistence detected
+----------------------------------------
+
+[2026-03-22 13:31:58.976730]
+Action: REMOVED
+Path: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+Key: New Value #1
+Old Value: c:\malware.exe
+New Value: None
+Severity: HIGH
+Reason: Persistence detected
+----------------------------------------
