@@ -1,22 +1,33 @@
 from datetime import datetime
-import os
 
-def log_change(action, path, key, old, new, severity, reason):
-    log_file = "logs.txt"
+LOG_FILE = "logs.txt"
 
-    try:
-        with open(log_file, "a") as f:
-            f.write(f"\n[{datetime.now()}]\n")
-            f.write(f"Action: {action}\n")
-            f.write(f"Path: {path}\n")
-            f.write(f"Key: {key}\n")
-            f.write(f"Old Value: {old}\n")
-            f.write(f"New Value: {new}\n")
-            f.write(f"Severity: {severity}\n")
-            f.write(f"Reason: {reason}\n")
-            f.write("-" * 40 + "\n")
 
-        print("📝 Logged successfully")
+def format_log_entry(action, path, key, old, new, severity, reason):
+    return (
+        f"[{datetime.now():%Y-%m-%d %H:%M:%S}]\n"
+        f"Action: {action}\n"
+        f"Path: {path}\n"
+        f"Key: {key}\n"
+        f"Old Value: {old}\n"
+        f"New Value: {new}\n"
+        f"Severity: {severity}\n"
+        f"Reason: {reason}\n"
+        + ("-" * 50)
+        + "\n"
+    )
 
-    except Exception as e:
-        print("❌ Logging failed:", e)
+
+def log_change(action, path, key, old, new, severity, reason, callback=None):
+    entry = format_log_entry(action, path, key, old, new, severity, reason)
+
+    with open(LOG_FILE, "a", encoding="utf-8") as file:
+        file.write(entry)
+
+    if callback is not None:
+        try:
+            callback(entry)
+        except Exception:
+            pass
+
+    return entry
