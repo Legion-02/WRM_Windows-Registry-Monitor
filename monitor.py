@@ -1,66 +1,64 @@
-import time
 import json
+import time
 import winreg
-import config
 
-from detector import detect_changes
+import config
 from analyzer import analyze_change
+from detector import detect_changes
 from logger import log_change
 
 
-# 🔹 Get registry values
 def get_values(hive, path):
     values = {}
     try:
         key = winreg.OpenKey(hive, path)
-        i = 0
+        index = 0
         while True:
-            name, value, _ = winreg.EnumValue(key, i)
+            name, value, _ = winreg.EnumValue(key, index)
             values[name] = value
-            i += 1
+            index += 1
     except OSError:
         pass
     return values
 
 
-def monitor():
-    # ✅ Load baseline
+def monitor(status_callback=None, log_callback=None, stop_event=None, baseline_path="baseline.json"):
     try:
-        with open("baseline.json", "r") as f:
-            baseline = json.load(f)
-        print("✅ Baseline loaded successfully")
-    except:
-        print("❌ Failed to load baseline. Run baseline creation first.")
+        with open(baseline_path, "r", encoding="utf-8") as file:
+            baseline = json.load(file)
+    except FileNotFoundError:
+        if status_callback:
+            status_callback("Baseline not found. Please create baseline first.")
+        return
+    except Exception as exc:
+        if status_callback:
+            status_callback(f"Failed to load baseline: {exc}")
         return
 
-    print("🔍 Monitoring started...\n")
+    if status_callback:
+        status_callback("Monitoring started.")
 
     while True:
+        if stop_event and stop_event.is_set():
+            if status_callback:
+                status_callback("Monitoring stopped.")
+            break
+
         for hive_name, hive in config.HIVES.items():
             hive_obj = getattr(winreg, hive)
 
             for path in config.MONITORED_KEYS:
                 full_path = f"{hive_name}\\{path}"
-
-                # 🔹 Get current values
                 current_values = get_values(hive_obj, path)
-
-                # 🔹 Get old values from baseline
                 old_values = baseline.get(full_path, {})
-
-                # 🔹 Detect changes
                 changes = detect_changes(old_values, current_values)
 
-                # 🔹 Process changes
-                for change in changes:
-                    action, key, old_val, new_val = change
+                for action, key, old_val, new_val in changes:
+                    severity, reason = analyze_change(full_path, key, new_val)
+                    message = f"[{severity}] {action} -> {full_path} -> {key}"
 
-                    severity, reason = analyze_change(
-                        full_path, key, new_val
-                    )
-
-                    print(f"[{severity}] {action} → {full_path} → {key}")
-                    print(f"Reason: {reason}\n")
+                    if status_callback:
+                        status_callback(message)
 
                     log_change(
                         action,
@@ -69,14 +67,13 @@ def monitor():
                         old_val,
                         new_val,
                         severity,
-                        reason
+                        reason,
+                        callback=log_callback,
                     )
 
-                # ✅ Update baseline in memory
                 baseline[full_path] = current_values
 
-        # 🔁 Debug indicator (VERY IMPORTANT)
-        print("⏳ Monitoring cycle complete...\n")
+        with open(baseline_path, "w", encoding="utf-8") as file:
+            json.dump(baseline, file, indent=4)
 
-        # ⏱ Wait before next scan
         time.sleep(config.POLL_INTERVAL)
