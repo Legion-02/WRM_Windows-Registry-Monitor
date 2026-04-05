@@ -35,19 +35,18 @@ The Windows Registry is commonly used by attackers for:
 ## 🏗️ Project Structure
 
 WRM_Windows-Registry-Monitor/
-│
-├── gui.py
-├── main.py
-├── monitor.py
-├── baseline.py
-├── detector.py
-├── analyzer.py
-├── logger.py
-├── config.py
-│
-├── baseline.json
-├── logs.txt
-└── README.md
+
+├── gui.py 
+├── main.py 
+├── monitor.py 
+├── baseline.py 
+├── detector.py 
+├── analyzer.py 
+├── logger.py 
+├── config.py 
+├── baseline.json 
+├── logs.txt 
+└── README.md 
 
 ---
 
